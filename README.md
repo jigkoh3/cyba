@@ -1,5 +1,9 @@
 # CYBA
 
+![CI](https://github.com/YOUR_ORG/cyba/actions/workflows/ci.yml/badge.svg)
+
+**Staging:** https://cyba.vercel.app *(update badge org/repo and this URL after first Vercel deploy)*
+
 CYBA is a full-stack web application built with Next.js 14 (App Router), TypeScript, Prisma, and PostgreSQL. It follows a monolith architecture deployed on Vercel with a Neon-managed database.
 
 ## Local Setup
@@ -79,6 +83,7 @@ public/           Static assets
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint |
+| `npm test` | Run unit tests (Vitest) |
 | `npm run db:generate` | Regenerate Prisma client |
 | `npm run db:migrate` | Apply pending migrations (dev) |
 | `npm run db:push` | Push schema changes without migration (prototyping) |
