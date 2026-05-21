@@ -43,10 +43,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm run db:generate
       - run: npm run build
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost/ci
 
   deploy-staging:
     name: Deploy to Staging
@@ -63,7 +60,6 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm run db:generate
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
       - name: Deploy to Vercel (staging)
