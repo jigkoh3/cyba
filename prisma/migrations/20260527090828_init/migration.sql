@@ -1,0 +1,2 @@
+-- Empty baseline migration — no application tables yet.
+-- Application schema tables are added with each feature issue.
