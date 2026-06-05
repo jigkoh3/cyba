@@ -4,13 +4,13 @@
 
 **Staging:** https://cyba.vercel.app *(Vercel project to be linked — see setup notes)*
 
-CYBA is a full-stack web application built with Next.js 14 (App Router), TypeScript, Prisma, and PostgreSQL. It follows a monolith architecture deployed on Vercel with a Neon-managed database.
+CYBA is a full-stack web application built with Next.js 15 (App Router), React 19, TypeScript, Prisma, and PostgreSQL. It follows a monolith architecture deployed on Vercel with a Neon-managed database.
 
 ## Local Setup
 
 ### Prerequisites
 
-- Node.js 20 LTS
+- Node.js 20 LTS or newer (CI runs on Node 24)
 - npm 10+
 - A PostgreSQL database (local or [Neon](https://neon.tech) free tier)
 
@@ -91,7 +91,8 @@ public/           Static assets
 ## Tech Stack
 
 - **Language:** TypeScript
-- **Framework:** Next.js 14 (App Router)
+- **Framework:** Next.js 15 (App Router)
+- **UI:** React 19
 - **ORM:** Prisma
 - **Database:** PostgreSQL (Neon)
 - **Hosting:** Vercel
