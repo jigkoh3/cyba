@@ -3,6 +3,236 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// NextAuth required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  memberships  Member[]
+  comments     Comment[]
+  auditLogs    AuditLog[]
+  createdIssues Issue[]    @relation("IssueCreatedBy")
+  assignedIssues Issue[]   @relation("IssueAssignedUser")
+  apiKeys      ApiKey[]
+  createdProjects Project[] @relation("ProjectCreatedBy")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+  members  Member[]
+  apiKeys  ApiKey[]
+}
+
+model Project {
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  status         ProjectStatus @default(active)
+  organizationId String
+  createdByUserId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ProjectCreatedBy", fields: [createdByUserId], references: [id])
+  members      Member[]
+  issues       Issue[]
+
+  @@index([organizationId])
+}
+
+enum ProjectStatus {
+  active
+  archived
+}
+
+model Member {
+  id             String     @id @default(cuid())
+  projectId      String?
+  organizationId String
+  userId         String?
+  agentId        String?
+  agentName      String?
+  role           MemberRole @default(member)
+  createdAt      DateTime   @default(now())
+
+  project      Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@unique([projectId, agentId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([agentId])
+}
+
+enum MemberRole {
+  owner
+  admin
+  member
+  viewer
+}
+
+model Issue {
+  id              String        @id @default(cuid())
+  identifier      String
+  title           String
+  description     String?       @db.Text
+  status          IssueStatus   @default(todo)
+  priority        IssuePriority @default(medium)
+  projectId       String
+  assigneeUserId  String?
+  assigneeAgentId String?
+  assigneeAgentName String?
+  labels          String[]      @default([])
+  createdByUserId String?
+  createdByAgentId String?
+  parentId        String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee   User?      @relation("IssueAssignedUser", fields: [assigneeUserId], references: [id])
+  createdBy  User?      @relation("IssueCreatedBy", fields: [createdByUserId], references: [id])
+  parent     Issue?     @relation("IssueChildren", fields: [parentId], references: [id])
+  children   Issue[]    @relation("IssueChildren")
+  comments   Comment[]
+  auditLogs  AuditLog[]
+
+  @@unique([projectId, identifier])
+  @@index([projectId])
+  @@index([assigneeUserId])
+  @@index([assigneeAgentId])
+  @@index([status])
+}
+
+enum IssueStatus {
+  backlog
+  todo
+  in_progress
+  in_review
+  done
+  blocked
+  cancelled
+}
+
+enum IssuePriority {
+  critical
+  high
+  medium
+  low
+}
+
+model Comment {
+  id              String   @id @default(cuid())
+  issueId         String
+  body            String   @db.Text
+  authorUserId    String?
+  authorAgentId   String?
+  authorAgentName String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorUserId], references: [id])
+
+  @@index([issueId])
+  @@index([authorUserId])
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  issueId         String
+  actorUserId     String?
+  actorAgentId    String?
+  actorAgentName  String?
+  action          String
+  field           String?
+  oldValue        String?
+  newValue        String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor  User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([issueId])
+  @@index([actorUserId])
+}
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  name           String
+  keyHash        String   @unique
+  keyPrefix      String
+  organizationId String
+  userId         String
+  agentId        String?
+  agentName      String?
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
 }
